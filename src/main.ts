@@ -1,7 +1,7 @@
 console.log("Hello, World!");
 
 interface Post {
-  id: number;
+  id?: number;
   title: string;
   body: string;
   userId?: number;
@@ -20,15 +20,51 @@ async function loadPosts(){
     const response = await fetch(API_URL);
     const posts: Post[] = await response.json();
     postsList.innerHTML = "";
-    posts.slice(0,10).forEach(post => {
+    posts.slice(-10).reverse().forEach(post => {
         const li = document.createElement("li");
         li.innerHTML = `
-        <strong>${post.title}</strong>
+        <strong>${post.id} - ${post.title}</strong>
         <p>${post.body}</p>
         <button class="deleteBtn" data-id="${post.id}">Delete</button>
         `
         postsList.appendChild(li);
     })
+
+    // attach delete event
+    document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+            const postId = (e.target as HTMLButtonElement).dataset.id;
+            await fetch(`${API_URL}/${postId}`, { method: "DELETE" });
+            loadPosts();
+        })
+    })
 }
+
+async function createPost(post: Post){
+    const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(post)
+    });
+    const newPost = await res.json();
+    console.log("Created Post:", newPost);
+
+    loadPosts();
+}
+
+createBtn.addEventListener("click", () => {
+    const title = titleInput.value;
+    const body = bodyInput.value;
+    if (title && body) {
+        const newPost: Post = {
+            title,
+            body,
+            userId: 1,
+        };
+        createPost(newPost);
+    }
+});
 
 loadPosts()
